@@ -219,8 +219,8 @@
         ctx.beginPath(); ctx.moveTo(0, px); ctx.lineTo(canvas.width, px); ctx.stroke();
         ctx.fillStyle = '#000';
         ctx.font = '10px Arial';
-        ctx.fillText(`${i}cm`, px + 2, 12);
-        ctx.fillText(`${i}cm`, 2, px + 10);
+        ctx.fillText(${i}cm, px + 2, 12);
+        ctx.fillText(${i}cm, 2, px + 10);
       }
 
       ctx.drawImage(img, imgX, imgY, img.width * scale, img.height * scale);
@@ -235,7 +235,7 @@
         const [r2, g2, b2] = key.split(',').map(Number);
         if (colorDistance(r, g, b, r2, g2, b2) < tolerancia) return key;
       }
-      return `${r},${g},${b}`;
+      return ${r},${g},${b};
     }
 
     function calcularEstambre() {
@@ -272,7 +272,7 @@
       const costoFieltro = areaImagenM2 * PRECIO_FIELTRO;
       const total = costoEstambre + costoTela + costoFieltro;
 
-      resultado.innerText = `Área cubierta: ${areaImagenCm2.toFixed(2)} cm²\nEstambre necesario: ${estambreNecesario.toFixed(2)} m\nCosto total: $${total.toFixed(2)} MXN`;
+      resultado.innerText = Área cubierta: ${areaImagenCm2.toFixed(2)} cm²\nEstambre necesario: ${estambreNecesario.toFixed(2)} m\nCosto total: $${total.toFixed(2)} MXN;
 
       calcularPorColor(imageData);
     }
@@ -313,10 +313,10 @@
            const costo = bolas * PRECIO_BOLA;
 
         const [r, g, b] = key.split(',');
-        detalle += `<div style="display:flex;align-items:center;margin:4px 0">
+        detalle += <div style="display:flex;align-items:center;margin:4px 0">
           <div style="width:20px;height:20px;background:rgb(${r},${g},${b});margin-right:10px;border:1px solid #000"></div>
           ${estambre.toFixed(2)} m - $${costo.toFixed(2)} MXN
-        </div>`;
+        </div>;
       });
 
       document.getElementById('colorDetalle').innerHTML = detalle;
