@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculadora de Estambre por Imagen</title>
+  <style>
+    :root {
+      --primary: #000000;
+      --accent: #555;
+      --bg: linear-gradient(to right, #3b5998, #8b9dc3, #e1306c);
+      --card: rgba(255, 255, 255, 0.95);
+      --text: #000000;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      color: var(--text);
+    }
+
+    header {
+      width: 100%;
+      background-color: white;
+      padding: 10px 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    header img {
+      height: 50px;
+      margin-right: 15px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 2.5rem;
+      color: black;
+    }
+
+    canvas {
+      border: 3px solid black;
+      background: white;
+      margin-top: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .upload-btn, .controls button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      background-color: white;
+      color: black;
+      border: 2px solid black;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+      font-weight: bold;
+    }
+
+    .upload-btn:hover, .controls button:hover {
+      background: #eee;
+    }
+
+    #resultado {
+      margin-top: 20px;
+      font-size: 1.1rem;
+      background: var(--card);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      text-align: center;
+      white-space: pre-line;
+      color: black;
+    }
+
+    #colorDetalle {
+      margin-top: 10px;
+      background: var(--card);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      color: black;
+    }
+
+    #inputs-container {
+      max-width: 600px;
+      width: 90%;
+      background: var(--card);
+      margin-top: 20px;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: black;
+    }
+
+    #inputs-container label {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      font-weight: bold;
+      color: black;
+    }
+
+    #inputs-container input {
+      width: 150px;
+      padding: 5px;
+      border: 1px solid #000;
+      border-radius: 6px;
+      color: black;
+    }
+
+    .controls {
+      margin-top: 20px;
+    }
+
+    .social-links {
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    .social-links a {
+      margin: 0 10px;
+      text-decoration: none;
+      font-size: 1.5rem;
+      transition: transform 0.2s;
+      color: black;
+    }
+
+    .social-links a:hover {
+      transform: scale(1.2);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="Logo" />
+    <h1>Calculadora de Estambre con Imagen</h1>
+  </header>
+
+  <div id="inputs-container">
+    <label>Precio por bola de estambre ($): <input type="number" id="precioBola" value="35" step="0.1"></label>
+    <label>Metros por bola de estambre: <input type="number" id="metrosBola" value="200" step="0.1"></label>
+    <label>Precio tela base por m² ($): <input type="number" id="precioTela" value="50" step="0.1"></label>
+    <label>Precio fieltro por m² ($): <input type="number" id="precioFieltro" value="30" step="0.1"></label>
+    <label>Centímetros tejidos por metro: <input type="number" id="tejidoCm" value="10" step="0.1"></label>
+    <label>Distancia entre puntadas (cm): <input type="number" id="distanciaPuntada" value="0.5" step="0.01"></label>
+  </div>
+
+  <label class="upload-btn" for="imgInput">Subir Imagen</label>
+  <input type="file" accept="image/png" id="imgInput">
+
+  <canvas id="lienzo" width="500" height="500"></canvas>
+
+  <div class="controls">
+    <button onclick="centrarImagen()">Centrar Imagen</button>
+    <button onclick="zoomIn()">Zoom +</button>
+    <button onclick="zoomOut()">Zoom -</button>
+    <button onclick="exportarImagen()">Exportar Imagen con Cálculo</button>
+  </div>
+
+  <div id="resultado"></div>
+  <div id="colorDetalle"></div>
+
+  <div class="social-links">
+    <p>Sígueme en redes sociales:</p>
+    <a href="https://www.facebook.com/profile.php?id=61559232980025" target="_blank"><i class="fab fa-facebook"></i></a>
+    <a href="https://www.instagram.com/_alfomex/" target="_blank"><i class="fab fa-instagram"></i></a>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('lienzo');
+    const ctx = canvas.getContext('2d');
+    const imgInput = document.getElementById('imgInput');
+    const resultado = document.getElementById('resultado');
+
+    const anchoCm = 100;
+    const altoCm = 100;
+    const pxPorCm = canvas.width / anchoCm;
+
+    let img = new Image();
+    let dragging = false;
+    let offsetX = 0, offsetY = 0;
+    let imgX = 0, imgY = 0;
+    let scale = 1;
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i <= 100; i++) {
+        const px = i * pxPorCm;
+        ctx.fillStyle = i % 10 === 0 ? '#ddd' : '#eee';
+        ctx.fillRect(px, 0, 1, canvas.height);
+        ctx.fillRect(0, px, canvas.width, 1);
+      }
+
+      ctx.strokeStyle = '#999';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 100; i += 10) {
+        const px = i * pxPorCm;
+        ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, canvas.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, px); ctx.lineTo(canvas.width, px); ctx.stroke();
+        ctx.fillStyle = '#000';
+        ctx.font = '10px Arial';
+        ctx.fillText(`${i}cm`, px + 2, 12);
+        ctx.fillText(`${i}cm`, 2, px + 10);
+      }
+
+      ctx.drawImage(img, imgX, imgY, img.width * scale, img.height * scale);
+    }
+
+    function colorDistance(r1, g1, b1, r2, g2, b2) {
+      return Math.sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2);
+    }
+
+    function agruparColor(r, g, b, mapa, tolerancia = 50) {
+      for (let [key, info] of mapa.entries()) {
+        const [r2, g2, b2] = key.split(',').map(Number);
+        if (colorDistance(r, g, b, r2, g2, b2) < tolerancia) return key;
+      }
+      return `${r},${g},${b}`;
+    }
+
+    function calcularEstambre() {
+      const PRECIO_BOLA = parseFloat(document.getElementById('precioBola').value);
+      const METROS_POR_BOLA = parseFloat(document.getElementById('metrosBola').value);
+      const PRECIO_TELA_BASE = parseFloat(document.getElementById('precioTela').value);
+      const PRECIO_FIELTRO = parseFloat(document.getElementById('precioFieltro').value);
+      const CM_TEJIDOS_POR_METRO = parseFloat(document.getElementById('tejidoCm').value);
+      const DISTANCIA_PUNTADA = parseFloat(document.getElementById('distanciaPuntada').value);
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(img, imgX, imgY, img.width * scale, img.height * scale);
+      const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+
+      let pixelCount = 0;
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        const alpha = imageData.data[i + 3];
+        if (alpha > 10) pixelCount++;
+      }
+
+      const totalPixels = canvas.width * canvas.height;
+      const porcentaje = pixelCount / totalPixels;
+      const areaImagenCm2 = 100 * 100 * porcentaje;
+      const areaImagenM2 = areaImagenCm2 / 10000;
+      const altoTejido = Math.sqrt(areaImagenCm2);
+      const lineas = altoTejido / DISTANCIA_PUNTADA;
+      const estambreNecesario = lineas * (1 / CM_TEJIDOS_POR_METRO) * altoTejido;
+      const bolas = estambreNecesario / METROS_POR_BOLA;
+      const costoEstambre = bolas * PRECIO_BOLA;
+      const costoTela = areaImagenM2 * PRECIO_TELA_BASE;
+      const costoFieltro = areaImagenM2 * PRECIO_FIELTRO;
+      const total = costoEstambre + costoTela + costoFieltro;
+
+      resultado.innerText = `Área cubierta: ${areaImagenCm2.toFixed(2)} cm²\nEstambre necesario: ${estambreNecesario.toFixed(2)} m\nCosto total: $${total.toFixed(2)} MXN`;
+
+      calcularPorColor(imageData);
+    }
+
+    function calcularPorColor(imageData) {
+      const mapa = new Map();
+      const PRECIO_BOLA = parseFloat(document.getElementById('precioBola').value);
+      const METROS_POR_BOLA = parseFloat(document.getElementById('metrosBola').value);
+      const CM_TEJIDOS_POR_METRO = parseFloat(document.getElementById('tejidoCm').value);
+      const DISTANCIA_PUNTADA = parseFloat(document.getElementById('distanciaPuntada').value);
+
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        const a = imageData.data[i + 3];
+        if (a < 10) continue;
+        const r = imageData.data[i];
+        const g = imageData.data[i + 1];
+        const b = imageData.data[i + 2];
+
+        const key = agruparColor(r, g, b, mapa);
+        if (!mapa.has(key)) mapa.set(key, 0);
+        mapa.set(key, mapa.get(key) + 1);
+      }
+
+      const totalPixels = canvas.width * canvas.height;
+      let detalle = '<strong>Estambre necesario por color (agrupado):</strong><br>';
+
+      [...mapa.entries()]
+        .filter(([_, count]) => count / totalPixels > 0.01) // descarta colores con menos del 1% del área
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .forEach(([key, count]) => {
+           const porcentaje = count / totalPixels;
+           const areaCm2 = 100 * 100 * porcentaje;
+           const altoTejido = Math.sqrt(areaCm2);
+           const lineas = altoTejido / DISTANCIA_PUNTADA;
+           const estambre = lineas * (1 / CM_TEJIDOS_POR_METRO) * altoTejido;
+           const bolas = estambre / METROS_POR_BOLA;
+           const costo = bolas * PRECIO_BOLA;
+
+        const [r, g, b] = key.split(',');
+        detalle += `<div style="display:flex;align-items:center;margin:4px 0">
+          <div style="width:20px;height:20px;background:rgb(${r},${g},${b});margin-right:10px;border:1px solid #000"></div>
+          ${estambre.toFixed(2)} m - $${costo.toFixed(2)} MXN
+        </div>`;
+      });
+
+      document.getElementById('colorDetalle').innerHTML = detalle;
+    }
+
+    imgInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        img = new Image();
+        img.onload = function() {
+          scale = 1;
+          imgX = (canvas.width - img.width) / 2;
+          imgY = (canvas.height - img.height) / 2;
+          draw();
+          calcularEstambre();
+        }
+        img.src = evt.target.result;
+      }
+      reader.readAsDataURL(file);
+    });
+
+    canvas.addEventListener('mousedown', e => {
+      dragging = true;
+      offsetX = e.offsetX - imgX;
+      offsetY = e.offsetY - imgY;
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      if (dragging) {
+        imgX = e.offsetX - offsetX;
+        imgY = e.offsetY - offsetY;
+        draw();
+        calcularEstambre();
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => { dragging = false; });
+
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.05 : 0.05;
+      scale += delta;
+      if (scale < 0.1) scale = 0.1;
+      draw();
+      calcularEstambre();
+    });
+
+    function centrarImagen() {
+      if (!img.src) return;
+      imgX = (canvas.width - img.width * scale) / 2;
+      imgY = (canvas.height - img.height * scale) / 2;
+      draw();
+      calcularEstambre();
+    }
+
+    function zoomIn() {
+      scale *= 1.1;
+      draw();
+      calcularEstambre();
+    }
+
+    function zoomOut() {
+      scale *= 0.9;
+      draw();
+      calcularEstambre();
+    }
+
+    function exportarImagen() {
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = canvas.width;
+      exportCanvas.height = canvas.height + 120;
+      const exportCtx = exportCanvas.getContext('2d');
+
+      exportCtx.fillStyle = '#fff';
+      exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+      exportCtx.drawImage(canvas, 0, 0);
+
+      exportCtx.fillStyle = '#000';
+      exportCtx.font = '14px Segoe UI';
+      const texto = resultado.innerText.split('\n');
+      texto.forEach((linea, i) => {
+        exportCtx.fillText(linea, 10, canvas.height + 30 + i * 20);
+      });
+
+      const link = document.createElement('a');
+      link.download = 'alfombra_calculo.png';
+      link.href = exportCanvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>
