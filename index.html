@@ -81,16 +81,38 @@
       color: black;
     }
 
+    .contenedor-principal {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 30px;
+      margin: 30px auto;
+      max-width: 1200px;
+      padding: 0 20px;
+      box-sizing: border-box;
+    }
+
     canvas {
       border: 2px solid var(--accent);
       background: white;
-      margin: 20px 0;
       box-shadow: 0 4px 12px var(--shadow);
+      flex-shrink: 0;
+    }
+
+    .controls {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .lateral {
+      max-width: 600px;
+      flex: 1;
+      min-width: 300px;
     }
 
     #resultado, #colorDetalle {
-      width: 90%;
-      max-width: 600px;
+      width: 100%;
       background: var(--card-bg);
       padding: 20px;
       border-radius: 10px;
@@ -148,20 +170,24 @@
   </div>
 
   <label class="upload-btn" for="imgInput">AÑADIR IMAGEN</label>
-  <input type="file" accept="image/png" id="imgInput">
+  <input type="file" accept="image/png" id="imgInput" style="display:none">
 
-  <canvas id="lienzo" width="500" height="500"></canvas>
+  <div class="contenedor-principal">
+    <div>
+      <canvas id="lienzo" width="500" height="500"></canvas>
+      <div class="controls">
+        <button onclick="centrarImagen()">Centrar Imagen</button>
+        <button onclick="zoomIn()">Zoom +</button>
+        <button onclick="zoomOut()">Zoom -</button>
+      </div>
+    </div>
 
-  <div class="controls">
-    <button onclick="centrarImagen()">Centrar Imagen</button>
-    <button onclick="zoomIn()">Zoom +</button>
-    <button onclick="zoomOut()">Zoom -</button>
+    <div class="lateral">
+      <div id="resultado"></div>
+      <div id="colorDetalle"></div>
+      <button id="añadirCarrito">AÑADIR AL CARRITO</button>
+    </div>
   </div>
-
-  <div id="resultado"></div>
-  <div id="colorDetalle"></div>
-
-  <button id="añadirCarrito">AÑADIR AL CARRITO</button>
 
   <div class="social-links">
     <p>Sígueme en redes sociales:</p>
@@ -170,200 +196,200 @@
   </div>
 
   <script>
-const canvas = document.getElementById('lienzo');
-const ctx = canvas.getContext('2d');
-const imgInput = document.getElementById('imgInput');
-const resultado = document.getElementById('resultado');
-const colorDetalle = document.getElementById('colorDetalle');
+    const canvas = document.getElementById('lienzo');
+    const ctx = canvas.getContext('2d');
+    const imgInput = document.getElementById('imgInput');
+    const resultado = document.getElementById('resultado');
+    const colorDetalle = document.getElementById('colorDetalle');
 
-const pxPorCm = canvas.width / 100;
-let img = new Image();
-let dragging = false;
-let offsetX = 0, offsetY = 0;
-let imgX = 0, imgY = 0;
-let scale = 1;
+    const pxPorCm = canvas.width / 100;
+    let img = new Image();
+    let dragging = false;
+    let offsetX = 0, offsetY = 0;
+    let imgX = 0, imgY = 0;
+    let scale = 1;
 
-const COSTOS = {
-  bolaEstambre: 35 * 4,
-  metrosBola: 200,
-  telaBase: 50 * 4,
-  fieltro: 30 * 4,
-  personalizacion: 500,
-  envio: 200,
-  tejidoCm: 10,
-  distanciaPuntada: 0.3
-};
+    const COSTOS = {
+      bolaEstambre: 35 * 4,
+      metrosBola: 200,
+      telaBase: 50 * 4,
+      fieltro: 30 * 4,
+      personalizacion: 500,
+      envio: 200,
+      tejidoCm: 10,
+      distanciaPuntada: 0.3
+    };
 
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let i = 0; i <= 100; i++) {
-    const px = i * pxPorCm;
-    ctx.fillStyle = i % 10 === 0 ? '#ddd' : '#eee';
-    ctx.fillRect(px, 0, 1, canvas.height);
-    ctx.fillRect(0, px, canvas.width, 1);
-  }
-  ctx.strokeStyle = '#999';
-  for (let i = 0; i <= 100; i += 10) {
-    const px = i * pxPorCm;
-    ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, canvas.height); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0, px); ctx.lineTo(canvas.width, px); ctx.stroke();
-    ctx.fillStyle = '#000';
-    ctx.font = '10px Arial';
-    ctx.fillText(`${i}cm`, px + 2, 12);
-    ctx.fillText(`${i}cm`, 2, px + 10);
-  }
-  ctx.drawImage(img, imgX, imgY, img.width * scale, img.height * scale);
-}
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i <= 100; i++) {
+        const px = i * pxPorCm;
+        ctx.fillStyle = i % 10 === 0 ? '#ddd' : '#eee';
+        ctx.fillRect(px, 0, 1, canvas.height);
+        ctx.fillRect(0, px, canvas.width, 1);
+      }
+      ctx.strokeStyle = '#999';
+      for (let i = 0; i <= 100; i += 10) {
+        const px = i * pxPorCm;
+        ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, canvas.height); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, px); ctx.lineTo(canvas.width, px); ctx.stroke();
+        ctx.fillStyle = '#000';
+        ctx.font = '10px Arial';
+        ctx.fillText(`${i}cm`, px + 2, 12);
+        ctx.fillText(`${i}cm`, 2, px + 10);
+      }
+      ctx.drawImage(img, imgX, imgY, img.width * scale, img.height * scale);
+    }
 
-function agruparColor(r, g, b, mapa, tolerancia = 50) {
-  for (let [key, _] of mapa.entries()) {
-    const [r2, g2, b2] = key.split(',').map(Number);
-    const distancia = Math.sqrt((r - r2) ** 2 + (g - g2) ** 2 + (b - b2) ** 2);
-    if (distancia <= tolerancia) return key;
-  }
-  return `${r},${g},${b}`;
-}
+    function agruparColor(r, g, b, mapa, tolerancia = 50) {
+      for (let [key, _] of mapa.entries()) {
+        const [r2, g2, b2] = key.split(',').map(Number);
+        const distancia = Math.sqrt((r - r2) ** 2 + (g - g2) ** 2 + (b - b2) ** 2);
+        if (distancia <= tolerancia) return key;
+      }
+      return `${r},${g},${b}`;
+    }
 
-function calcularEstambre() {
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = canvas.width;
-  tempCanvas.height = canvas.height;
-  const tempCtx = tempCanvas.getContext('2d');
-  tempCtx.drawImage(img, imgX, imgY, img.width * scale, img.height * scale);
-  const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
+    function calcularEstambre() {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(img, imgX, imgY, img.width * scale, img.height * scale);
+      const imageData = tempCtx.getImageData(0, 0, canvas.width, canvas.height);
 
-  let pixelCount = 0;
-  for (let i = 0; i < imageData.data.length; i += 4) {
-    if (imageData.data[i + 3] > 10) pixelCount++;
-  }
+      let pixelCount = 0;
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        if (imageData.data[i + 3] > 10) pixelCount++;
+      }
 
-  const totalPixels = canvas.width * canvas.height;
-  const porcentaje = pixelCount / totalPixels;
-  const areaCm2 = 10000 * porcentaje;
-  const areaM2 = areaCm2 / 10000;
-  const altoTejido = Math.sqrt(areaCm2);
-  const lineas = altoTejido / COSTOS.distanciaPuntada;
-  const estambreTotal = lineas * (1 / COSTOS.tejidoCm) * altoTejido;
-  const bolas = estambreTotal / COSTOS.metrosBola;
+      const totalPixels = canvas.width * canvas.height;
+      const porcentaje = pixelCount / totalPixels;
+      const areaCm2 = 10000 * porcentaje;
+      const areaM2 = areaCm2 / 10000;
+      const altoTejido = Math.sqrt(areaCm2);
+      const lineas = altoTejido / COSTOS.distanciaPuntada;
+      const estambreTotal = lineas * (1 / COSTOS.tejidoCm) * altoTejido;
+      const bolas = estambreTotal / COSTOS.metrosBola;
 
-  const costoEstambre = bolas * COSTOS.bolaEstambre;
-  const costoTela = areaM2 * COSTOS.telaBase;
-  const costoFieltro = areaM2 * COSTOS.fieltro;
-  const costoFinal = costoEstambre + costoTela + costoFieltro + COSTOS.personalizacion + COSTOS.envio;
+      const costoEstambre = bolas * COSTOS.bolaEstambre;
+      const costoTela = areaM2 * COSTOS.telaBase;
+      const costoFieltro = areaM2 * COSTOS.fieltro;
+      const costoFinal = costoEstambre + costoTela + costoFieltro + COSTOS.personalizacion + COSTOS.envio;
 
-  resultado.innerHTML = `<strong>Área cubierta:</strong> ${areaCm2.toFixed(2)} cm²<br>` +
-                        `<strong>Costo Tela:</strong> $${costoTela.toFixed(2)} MXN<br>` +
-                        `<strong>Costo Fieltro:</strong> $${costoFieltro.toFixed(2)} MXN<br>` +
-                        `<strong>Costo Estambre Total:</strong> $${costoEstambre.toFixed(2)} MXN<br>` +
-                        `<strong>Personalización:</strong> $${COSTOS.personalizacion.toFixed(2)} MXN<br>` +
-                        `<strong>Envío:</strong> $${COSTOS.envio.toFixed(2)} MXN<br>` +
-                        `<strong>TOTAL:</strong> $${costoFinal.toFixed(2)} MXN`;
+      resultado.innerHTML = `<strong>Área cubierta:</strong> ${areaCm2.toFixed(2)} cm²<br>` +
+                            `<strong>Costo Tela:</strong> $${costoTela.toFixed(2)} MXN<br>` +
+                            `<strong>Costo Fieltro:</strong> $${costoFieltro.toFixed(2)} MXN<br>` +
+                            `<strong>Costo Estambre Total:</strong> $${costoEstambre.toFixed(2)} MXN<br>` +
+                            `<strong>Personalización:</strong> $${COSTOS.personalizacion.toFixed(2)} MXN<br>` +
+                            `<strong>Envío:</strong> $${COSTOS.envio.toFixed(2)} MXN<br>` +
+                            `<strong>TOTAL:</strong> $${costoFinal.toFixed(2)} MXN`;
 
-  calcularPorColor(imageData, totalPixels);
-}
+      calcularPorColor(imageData, totalPixels);
+    }
 
-function calcularPorColor(imageData, totalPixels) {
-  const mapa = new Map();
-  for (let i = 0; i < imageData.data.length; i += 4) {
-    if (imageData.data[i + 3] < 10) continue;
-    const r = imageData.data[i];
-    const g = imageData.data[i + 1];
-    const b = imageData.data[i + 2];
-    const key = agruparColor(r, g, b, mapa, 50);
-    mapa.set(key, (mapa.get(key) || 0) + 1);
-  }
+    function calcularPorColor(imageData, totalPixels) {
+      const mapa = new Map();
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        if (imageData.data[i + 3] < 10) continue;
+        const r = imageData.data[i];
+        const g = imageData.data[i + 1];
+        const b = imageData.data[i + 2];
+        const key = agruparColor(r, g, b, mapa, 50);
+        mapa.set(key, (mapa.get(key) || 0) + 1);
+      }
 
-  const coloresUsados = [...mapa.entries()].filter(([_, count]) => count / totalPixels > 0.01);
-  let detalle = '<strong>Estambre por color:</strong><br>';
+      const coloresUsados = [...mapa.entries()].filter(([_, count]) => count / totalPixels > 0.01);
+      let detalle = '<strong>Estambre por color:</strong><br>';
 
-  if (coloresUsados.length > 5) {
-    detalle += `<span style="color:red;font-weight:bold">Demasiados colores detectados (${coloresUsados.length}). Contacta para personalización avanzada.</span>`;
-    document.getElementById('añadirCarrito').disabled = true;
-  } else {
-    document.getElementById('añadirCarrito').disabled = false;
-  }
+      if (coloresUsados.length > 5) {
+        detalle += `<span style="color:red;font-weight:bold">Demasiados colores detectados (${coloresUsados.length}). Contacta para personalización avanzada.</span>`;
+        document.getElementById('añadirCarrito').disabled = true;
+      } else {
+        document.getElementById('añadirCarrito').disabled = false;
+      }
 
-  coloresUsados.forEach(([key, count]) => {
-    const porcentaje = count / totalPixels;
-    const areaCm2 = 10000 * porcentaje;
-    const altoTejido = Math.sqrt(areaCm2);
-    const lineas = altoTejido / COSTOS.distanciaPuntada;
-    const estambre = lineas * (1 / COSTOS.tejidoCm) * altoTejido;
-    const bolas = estambre / COSTOS.metrosBola;
-    const costo = bolas * COSTOS.bolaEstambre;
-    const [r, g, b] = key.split(',');
-    detalle += `<div><div style="background:rgb(${r},${g},${b})"></div>${estambre.toFixed(2)} m - $${costo.toFixed(2)} MXN</div>`;
-  });
+      coloresUsados.forEach(([key, count]) => {
+        const porcentaje = count / totalPixels;
+        const areaCm2 = 10000 * porcentaje;
+        const altoTejido = Math.sqrt(areaCm2);
+        const lineas = altoTejido / COSTOS.distanciaPuntada;
+        const estambre = lineas * (1 / COSTOS.tejidoCm) * altoTejido;
+        const bolas = estambre / COSTOS.metrosBola;
+        const costo = bolas * COSTOS.bolaEstambre;
+        const [r, g, b] = key.split(',');
+        detalle += `<div><div style="background:rgb(${r},${g},${b})"></div>${estambre.toFixed(2)} m - $${costo.toFixed(2)} MXN</div>`;
+      });
 
-  colorDetalle.innerHTML = detalle;
-}
+      colorDetalle.innerHTML = detalle;
+    }
 
-imgInput.addEventListener('change', e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    img = new Image();
-    img.onload = function() {
-      scale = 1;
-      imgX = (canvas.width - img.width) / 2;
-      imgY = (canvas.height - img.height) / 2;
+    imgInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        img = new Image();
+        img.onload = function() {
+          scale = 1;
+          imgX = (canvas.width - img.width) / 2;
+          imgY = (canvas.height - img.height) / 2;
+          draw();
+          calcularEstambre();
+        }
+        img.src = evt.target.result;
+      }
+      reader.readAsDataURL(file);
+    });
+
+    canvas.addEventListener('mousedown', e => {
+      dragging = true;
+      offsetX = e.offsetX - imgX;
+      offsetY = e.offsetY - imgY;
+    });
+
+    canvas.addEventListener('mousemove', e => {
+      if (dragging) {
+        imgX = e.offsetX - offsetX;
+        imgY = e.offsetY - offsetY;
+        draw();
+        calcularEstambre();
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => dragging = false);
+    canvas.addEventListener('mouseleave', () => dragging = false);
+    canvas.addEventListener('wheel', e => {
+      e.preventDefault();
+      scale += e.deltaY > 0 ? -0.05 : 0.05;
+      if (scale < 0.1) scale = 0.1;
+      draw();
+      calcularEstambre();
+    });
+
+    function centrarImagen() {
+      if (!img.src) return;
+      imgX = (canvas.width - img.width * scale) / 2;
+      imgY = (canvas.height - img.height * scale) / 2;
       draw();
       calcularEstambre();
     }
-    img.src = evt.target.result;
-  }
-  reader.readAsDataURL(file);
-});
 
-canvas.addEventListener('mousedown', e => {
-  dragging = true;
-  offsetX = e.offsetX - imgX;
-  offsetY = e.offsetY - imgY;
-});
+    function zoomIn() {
+      scale *= 1.1;
+      draw();
+      calcularEstambre();
+    }
 
-canvas.addEventListener('mousemove', e => {
-  if (dragging) {
-    imgX = e.offsetX - offsetX;
-    imgY = e.offsetY - offsetY;
-    draw();
-    calcularEstambre();
-  }
-});
+    function zoomOut() {
+      scale *= 0.9;
+      draw();
+      calcularEstambre();
+    }
 
-canvas.addEventListener('mouseup', () => dragging = false);
-canvas.addEventListener('mouseleave', () => dragging = false);
-canvas.addEventListener('wheel', e => {
-  e.preventDefault();
-  scale += e.deltaY > 0 ? -0.05 : 0.05;
-  if (scale < 0.1) scale = 0.1;
-  draw();
-  calcularEstambre();
-});
-
-function centrarImagen() {
-  if (!img.src) return;
-  imgX = (canvas.width - img.width * scale) / 2;
-  imgY = (canvas.height - img.height * scale) / 2;
-  draw();
-  calcularEstambre();
-}
-
-function zoomIn() {
-  scale *= 1.1;
-  draw();
-  calcularEstambre();
-}
-
-function zoomOut() {
-  scale *= 0.9;
-  draw();
-  calcularEstambre();
-}
-
-document.getElementById('añadirCarrito').addEventListener('click', () => {
-  alert('Producto añadido al carrito');
-});
-</script>
+    document.getElementById('añadirCarrito').addEventListener('click', () => {
+      alert('Producto añadido al carrito');
+    });
+  </script>
 </body>
 </html>
